@@ -46,8 +46,8 @@ La aplicación se enfoca en la **seguridad**, la **experiencia de usuario (UX)**
 ### Localmente
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/vicentemrk/Sumativa-2-TaskFlow-.git
-   cd Sumativa-2-TaskFlow-
+   git clone https://github.com/vicentemrk/Sumativa2_TaskFlow.git
+   cd Sumativa2_TaskFlow
    ```
 2. **Abrir en el navegador:**
    Simplemente abre el archivo `index.html` en tu navegador favorito o utiliza una extensión como *Live Server*.
