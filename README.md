@@ -54,7 +54,7 @@ La aplicación se enfoca en la **seguridad**, la **experiencia de usuario (UX)**
 
 ### GitHub Pages
 La aplicación está configurada para despliegue automático. Puedes ver la versión en vivo aquí:
-👉 **[Ver TaskFlow en Vivo](https://vicentemrk.github.io/Sumativa-2-TaskFlow-/)**
+👉 **[Ver TaskFlow en Vivo](https://vicentemrk.github.io/Sumativa2_TaskFlow/)**
 
 ---
 
