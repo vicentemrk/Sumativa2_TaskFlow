@@ -182,9 +182,12 @@ ul {
   align-items: center;
 }
 
-.logo-mark svg {
+.logo-mark svg,
+.logo-mark img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 /* Theme toggle */

@@ -6,8 +6,14 @@
   <meta name="description" content="TaskFlow — Gestor de tareas moderno, seguro y responsive. Organiza tu equipo con prioridades, asignaciones y seguimiento en tiempo real.">
   <title>TaskFlow — Gestor de Tareas</title>
 
-  <!-- Favicon (SVG — checklist icon) -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><defs><linearGradient id='g' x1='0' y1='0' x2='36' y2='36' gradientUnits='userSpaceOnUse'><stop offset='0%25' stop-color='%23818cf8'/><stop offset='100%25' stop-color='%234f46e5'/></linearGradient></defs><rect width='36' height='36' rx='8' fill='url(%23g)'/><path d='M8.5 12.5l3 3 5.5-6' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/><line x1='20' y1='12' x2='28' y2='12' stroke='white' stroke-width='2' stroke-linecap='round' opacity='.9'/><circle cx='11.5' cy='19.5' r='1.8' fill='white' opacity='.55'/><line x1='20' y1='19.5' x2='27' y2='19.5' stroke='white' stroke-width='2' stroke-linecap='round' opacity='.45'/><circle cx='11.5' cy='26.5' r='1.8' fill='white' opacity='.3'/><line x1='20' y1='26.5' x2='25' y2='26.5' stroke='white' stroke-width='2' stroke-linecap='round' opacity='.25'/></svg>" type="image/svg+xml">
+  <!-- Open Graph / redes sociales -->
+  <meta property="og:title" content="TaskFlow — Gestor de Tareas">
+  <meta property="og:description" content="Gestor de tareas moderno, seguro y responsive. Prioridades, asignaciones y seguimiento en tiempo real.">
+  <meta property="og:image" content="logo.png">
+  <meta property="og:type" content="website">
+
+  <!-- Favicon -->
+  <link rel="icon" href="logo.png" type="image/png">
 
   <!-- Google Fonts: Inter para una tipografía moderna y legible -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,27 +33,9 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="logo">
-        <!-- Logo SVG: checklist icon que representa la app -->
+        <!-- Logo principal del proyecto -->
         <div class="logo-mark" aria-hidden="true">
-          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="logo-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#818cf8"/>
-                <stop offset="100%" stop-color="#4f46e5"/>
-              </linearGradient>
-            </defs>
-            <!-- Fondo redondeado -->
-            <rect width="36" height="36" rx="8" fill="url(#logo-grad)"/>
-            <!-- Tarea 1: completada (checkmark + línea) -->
-            <path d="M8.5 12.5l3 3 5.5-6" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="20" y1="12" x2="28" y2="12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
-            <!-- Tarea 2: pendiente -->
-            <circle cx="11.5" cy="19.5" r="1.8" fill="white" opacity="0.55"/>
-            <line x1="20" y1="19.5" x2="27" y2="19.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
-            <!-- Tarea 3: pendiente -->
-            <circle cx="11.5" cy="26.5" r="1.8" fill="white" opacity="0.3"/>
-            <line x1="20" y1="26.5" x2="25" y2="26.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
-          </svg>
+          <img src="logo.png" alt="TaskFlow logo" width="36" height="36">
         </div>
         <h1>TaskFlow</h1>
       </div>
@@ -95,7 +83,7 @@
               type="text"
               id="task-name"
               name="taskName"
-              placeholder="Ej: Diseñar wireframes del dashboard"
+              placeholder="Ej: Crear una nueva tarea"
               autocomplete="off"
               required
             >
@@ -111,7 +99,7 @@
               type="email"
               id="task-email"
               name="taskEmail"
-              placeholder="Ej: maria@empresa.com"
+              placeholder="Ej: mario@gmail.com"
               autocomplete="off"
               required
             >
