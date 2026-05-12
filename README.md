@@ -143,4 +143,4 @@ IA auditó arquitectura, seguridad y testing. Diseño conceptual: requerimiento 
 
 ## 📄 Licencia
 
-Proyecto fines académicos. Todos derechos reservados © 2026.
+Proyecto con fines académicos. Todos derechos reservados © 2026.
