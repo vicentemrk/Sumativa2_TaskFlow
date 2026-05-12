@@ -186,6 +186,14 @@ ul {
   height: 100%;
   object-fit: contain;
   display: block;
+  /* Light mode: white background becomes transparent */
+  mix-blend-mode: multiply;
+}
+
+[data-theme="dark"] .logo-mark img {
+  /* Dark mode: invert white to black, restore hue, and use screen to make black transparent */
+  filter: invert(1) hue-rotate(180deg) brightness(1.5);
+  mix-blend-mode: screen;
 }
 
 /* Theme toggle */
@@ -931,6 +939,7 @@ ul {
   );
   background-size: 200% 100%;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmer 3s infinite linear;
 }
