@@ -647,29 +647,22 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.renderizarLista();
   });
 
-  // ── Limpiar errores en tiempo real (crear) ────────────────────────────────
+  // ── Limpiar errores en tiempo real (crear y editar) ────────────────────────
   [
+    // Crear
     ['task-name',     'group-task-name',     'error-task-name',     'input'],
     ['task-email',    'group-task-email',    'error-task-email',    'input'],
     ['task-priority', 'group-task-priority', 'error-task-priority', 'change'],
-    ['task-due',      'group-task-due',      'error-task-due',      'change']
-  ].forEach(([inputId, groupId, errorId, evt]) => {
-    document.getElementById(inputId).addEventListener(evt, () => {
-      const g = document.getElementById(groupId);
-      const s = document.getElementById(errorId);
-      if (g) g.classList.remove('has-error');
-      if (s) s.textContent = '';
-    });
-  });
-
-  // ── Limpiar errores en tiempo real (editar) ───────────────────────────────
-  [
+    ['task-due',      'group-task-due',      'error-task-due',      'change'],
+    // Editar
     ['edit-task-name',     'group-edit-name',     'error-edit-name',     'input'],
     ['edit-task-email',    'group-edit-email',    'error-edit-email',    'input'],
     ['edit-task-priority', 'group-edit-priority', 'error-edit-priority', 'change'],
     ['edit-task-due',      'group-edit-due',      'error-edit-due',      'change']
   ].forEach(([inputId, groupId, errorId, evt]) => {
-    document.getElementById(inputId).addEventListener(evt, () => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener(evt, () => {
       const g = document.getElementById(groupId);
       const s = document.getElementById(errorId);
       if (g) g.classList.remove('has-error');

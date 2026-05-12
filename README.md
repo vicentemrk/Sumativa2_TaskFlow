@@ -34,7 +34,6 @@
 - 🛡️ **XSS-safe**: Uso estricto de `textContent` y DOM API.
 - ✅ **Validación Robusta**: Regex RFC 5322 + sanitización automática de espacios.
 - ♿ **Accesibilidad**: Focus trap en modales (Tab / Shift+Tab / Escape) y soporte ARIA.
-- 🧪 **TDD Ready**: Suite de tests integrada para validar lógica de negocio en aislamiento.
 
 ---
 
@@ -65,19 +64,7 @@ DOMContentLoaded
       └─► UI (consume Store + Query + Validator)
 ```
 
----
 
-## 🧪 Tests
-
-`app.test.js` — 13 tests de comportamiento. Sin framework.
-
-**Ejecutar:**
-1. Abrir `index.html` en browser.
-2. Consola (F12).
-3. Pegar contenido de `app.test.js`.
-4. Ver reporte `✔ PASS / ✘ FAIL`.
-
-Ciclo TDD: **RED → GREEN → REFACTOR**. Testea solo interfaz pública.
 
 ---
 
@@ -101,7 +88,6 @@ Sumativa-2-TaskFlow-/
 ├── index.html      # HTML + referencias recursos
 ├── styles.css      # Design system (tokens, componentes, animaciones)
 ├── app.js          # Store + Query + Validator + UI
-├── app.test.js     # 13 tests comportamiento
 └── README.md
 ```
 
