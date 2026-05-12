@@ -1,561 +1,593 @@
 'use strict';
 
-// ════════════════════════════════════════════════════════════
-// 1. CONSTANTES Y CONFIGURACIÓN
-// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO 1 — STORE
+// Interfaz: obtener() → Tarea[]
+//           guardar(tareas) → void
+//           agregar(datos) → Tarea
+//           editar(id, datos) → Tarea | null
+//           toggle(id) → Tarea | null
+//           eliminar(id) → void
+//           resetear() → void
+// Implementación: localStorage. Los callers no saben cómo persiste.
+// ════════════════════════════════════════════════════════════════════════════
 
-const STORAGE_KEY  = 'taskflow_tareas';
-const THEME_KEY    = 'taskflow_theme';
+const STORAGE_KEY = 'taskflow_tareas';
+const THEME_KEY   = 'taskflow_theme';
+
+const Store = (() => {
+  function obtener() {
+    try {
+      const datos = localStorage.getItem(STORAGE_KEY);
+      if (!datos) return [];
+      const parsed = JSON.parse(datos);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn('TaskFlow: datos corruptos, reseteando.', err);
+      return [];
+    }
+  }
+
+  function guardar(tareas) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tareas));
+    } catch (err) {
+      console.error('TaskFlow: error al guardar.', err);
+      UI.toast('Error al guardar. Almacenamiento lleno.', 'danger');
+    }
+  }
+
+  function agregar({ nombre, email, prioridad, fechaLimite }) {
+    const tareas = obtener();
+    const nueva = {
+      id: crypto.randomUUID(),
+      nombre,
+      email,
+      prioridad,
+      fechaLimite: fechaLimite || null,
+      completada: false,
+      creadoEn: new Date().toISOString()
+    };
+    tareas.unshift(nueva);
+    guardar(tareas);
+    return nueva;
+  }
+
+  function editar(id, { nombre, email, prioridad, fechaLimite }) {
+    const tareas = obtener();
+    const tarea  = tareas.find(t => t.id === id);
+    if (!tarea) return null;
+    tarea.nombre      = nombre;
+    tarea.email       = email;
+    tarea.prioridad   = prioridad;
+    tarea.fechaLimite = fechaLimite || null;
+    guardar(tareas);
+    return tarea;
+  }
+
+  function toggle(id) {
+    const tareas = obtener();
+    const tarea  = tareas.find(t => t.id === id);
+    if (!tarea) return null;
+    tarea.completada = !tarea.completada;
+    guardar(tareas);
+    return tarea;
+  }
+
+  function eliminar(id) {
+    guardar(obtener().filter(t => t.id !== id));
+  }
+
+  function resetear() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  return { obtener, guardar, agregar, editar, toggle, eliminar, resetear };
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO 2 — QUERY
+// Interfaz: aplicar(tareas, { filtro, busqueda, orden }) → Tarea[]
+// Estado mutable de la vista vive aquí, aislado.
+// ════════════════════════════════════════════════════════════════════════════
+
+const PRIORIDAD_PESO = { urgente: 4, alta: 3, media: 2, baja: 1 };
+
+const Query = (() => {
+  let filtro   = 'todas';
+  let busqueda = '';
+  let orden    = 'creacion';
+
+  function setFiltro(v)   { filtro   = v; }
+  function setBusqueda(v) { busqueda = v.trim(); }
+  function setOrden(v)    { orden    = v; }
+
+  /**
+   * Aplica filtro, búsqueda y ordenamiento sobre un array de tareas.
+   * Función pura: no accede al Store ni al DOM.
+   * @param {Tarea[]} tareas
+   * @returns {Tarea[]}
+   */
+  function aplicar(tareas) {
+    let resultado = [...tareas];
+
+    // Filtro por estado
+    if (filtro === 'completada') resultado = resultado.filter(t =>  t.completada);
+    if (filtro === 'pendiente')  resultado = resultado.filter(t => !t.completada);
+
+    // Búsqueda por texto
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      resultado = resultado.filter(t =>
+        t.nombre.toLowerCase().includes(q) ||
+        t.email.toLowerCase().includes(q)
+      );
+    }
+
+    // Ordenamiento
+    resultado.sort((a, b) => {
+      if (orden === 'prioridad') {
+        return (PRIORIDAD_PESO[b.prioridad] || 0) - (PRIORIDAD_PESO[a.prioridad] || 0);
+      }
+      if (orden === 'fecha') {
+        const fa = a.fechaLimite || '9999-12-31';
+        const fb = b.fechaLimite || '9999-12-31';
+        return fa.localeCompare(fb);
+      }
+      // 'creacion' — más reciente primero
+      return new Date(b.creadoEn) - new Date(a.creadoEn);
+    });
+
+    return resultado;
+  }
+
+  return { setFiltro, setBusqueda, setOrden, aplicar };
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO 3 — VALIDATOR
+// Interfaz: validar({ nombre, email, prioridad, fechaLimite })
+//           → { ok: true, datos } | { ok: false, errores: Record<string,string> }
+// Sin conocimiento del DOM — testeable en aislamiento.
+// ════════════════════════════════════════════════════════════════════════════
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const NAME_REGEX  = /^[\p{L}\p{N}\s.,;:!?¿¡()\/\-–—]{3,120}$/u;
 
-/** Prioridad numérica para ordenamiento (mayor = más urgente) */
-const PRIORIDAD_PESO = { urgente: 4, alta: 3, media: 2, baja: 1 };
-
-let filtroActivo  = 'todas';
-let ordenActivo   = 'creacion';
-let terminoBusqueda = '';
-
-// ════════════════════════════════════════════════════════════
-// 2. PERSISTENCIA (localStorage)
-// ════════════════════════════════════════════════════════════
-
-function obtenerTareas() {
-  try {
-    const datos = localStorage.getItem(STORAGE_KEY);
-    if (!datos) return [];
-    const parsed = JSON.parse(datos);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.warn('TaskFlow: datos corruptos, reseteando.', err);
-    return [];
-  }
-}
-
-function guardarTareas(tareas) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tareas));
-  } catch (err) {
-    console.error('TaskFlow: error al guardar.', err);
-    mostrarToast('Error al guardar. Almacenamiento lleno.', 'danger');
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-// 3. CRUD COMPLETO
-// ════════════════════════════════════════════════════════════
-
-/** CREATE */
-function agregarItem(nombre, email, prioridad, fechaLimite) {
-  const tareas = obtenerTareas();
-  const nueva = {
-    id: crypto.randomUUID(),
-    nombre,
-    email,
-    prioridad,
-    fechaLimite: fechaLimite || null,   // ISO date string o null
-    completada: false,
-    creadoEn: new Date().toISOString()
-  };
-  tareas.unshift(nueva);
-  guardarTareas(tareas);
-  return nueva;
-}
-
-/** UPDATE — edita nombre, email, prioridad y fechaLimite de una tarea por ID */
-function editarItem(id, datos) {
-  const tareas = obtenerTareas();
-  const tarea  = tareas.find(t => t.id === id);
-  if (!tarea) return null;
-
-  tarea.nombre     = datos.nombre;
-  tarea.email      = datos.email;
-  tarea.prioridad  = datos.prioridad;
-  tarea.fechaLimite = datos.fechaLimite || null;
-
-  guardarTareas(tareas);
-  return tarea;
-}
-
-/** Toggle completada/pendiente */
-function toggleCompletada(id) {
-  const tareas = obtenerTareas();
-  const tarea  = tareas.find(t => t.id === id);
-  if (tarea) {
-    tarea.completada = !tarea.completada;
-    guardarTareas(tareas);
-  }
-  return tarea;
-}
-
-/** DELETE */
-function eliminarItem(id) {
-  guardarTareas(obtenerTareas().filter(t => t.id !== id));
-}
-
-/** Hard Reset */
-function hardReset() {
-  localStorage.removeItem(STORAGE_KEY);
-  renderizarLista();
-  actualizarStats();
-  mostrarToast('Todas las tareas fueron eliminadas', 'danger');
-}
-
-// ════════════════════════════════════════════════════════════
-// 4. SANITIZACIÓN Y VALIDACIÓN
-// ════════════════════════════════════════════════════════════
-
-function sanitizar(texto) {
-  return texto.trim().replace(/\s+/g, ' ');
-}
-
-/** Retorna hoy en formato YYYY-MM-DD */
-function hoyISO() {
-  return new Date().toISOString().split('T')[0];
-}
-
-/** Formatea YYYY-MM-DD a texto legible en español */
-function formatearFecha(isoDate) {
-  if (!isoDate) return '';
-  // Parsear sin timezone shift
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const fecha = new Date(y, m - 1, d);
-  return fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-/**
- * Valida los campos del formulario principal o del formulario de edición.
- * @param {'create'|'edit'} modo
- */
-function validarCampos(modo) {
-  const prefix = modo === 'edit' ? 'edit-task-' : 'task-';
-  const groupPrefix = modo === 'edit' ? 'group-edit-' : 'group-task-';
-  const errorPrefix = modo === 'edit' ? 'error-edit-' : 'error-task-';
-
-  const nombreInput    = document.getElementById(prefix + 'name');
-  const emailInput     = document.getElementById(prefix + 'email');
-  const prioridadInput = document.getElementById(prefix + 'priority');
-  const dueInput       = document.getElementById(prefix + 'due');
-
-  const nombre    = sanitizar(nombreInput.value);
-  const email     = sanitizar(emailInput.value);
-  const prioridad = prioridadInput.value;
-  const due       = dueInput ? dueInput.value : '';
-
-  let ok = true;
-
-  // Nombre
-  limpiarError(groupPrefix + 'name', errorPrefix + 'name');
-  if (!nombre) {
-    mostrarError(groupPrefix + 'name', errorPrefix + 'name', 'El nombre de la tarea es obligatorio.');
-    ok = false;
-  } else if (!NAME_REGEX.test(nombre)) {
-    mostrarError(groupPrefix + 'name', errorPrefix + 'name', 'Usa entre 3–120 caracteres válidos. Sin símbolos especiales.');
-    ok = false;
+const Validator = (() => {
+  function hoyISO() {
+    return new Date().toISOString().split('T')[0];
   }
 
-  // Email
-  limpiarError(groupPrefix + 'email', errorPrefix + 'email');
-  if (!email) {
-    mostrarError(groupPrefix + 'email', errorPrefix + 'email', 'El email del asignado es obligatorio.');
-    ok = false;
-  } else if (!EMAIL_REGEX.test(email)) {
-    mostrarError(groupPrefix + 'email', errorPrefix + 'email', 'Ingresa un email válido (ej: nombre@empresa.com).');
-    ok = false;
-  }
+  /**
+   * Valida un objeto de datos de tarea.
+   * @param {{ nombre: string, email: string, prioridad: string, fechaLimite: string }} datos
+   * @returns {{ ok: boolean, datos?: object, errores?: Record<string,string> }}
+   */
+  function validar({ nombre, email, prioridad, fechaLimite }) {
+    const errores = {};
+    const n = (nombre    || '').trim().replace(/\s+/g, ' ');
+    const e = (email     || '').trim().replace(/\s+/g, ' ');
+    const p = (prioridad || '').trim();
+    const f = (fechaLimite || '').trim();
 
-  // Prioridad
-  limpiarError(groupPrefix + 'priority', errorPrefix + 'priority');
-  if (!prioridad) {
-    mostrarError(groupPrefix + 'priority', errorPrefix + 'priority', 'Selecciona una prioridad.');
-    ok = false;
-  }
-
-  // Fecha límite (opcional, pero si existe no puede ser pasada)
-  const dueGroupId = modo === 'edit' ? 'group-edit-due' : 'group-task-due';
-  const dueErrId   = modo === 'edit' ? 'error-edit-due'  : 'error-task-due';
-  limpiarError(dueGroupId, dueErrId);
-  if (due && due < hoyISO()) {
-    mostrarError(dueGroupId, dueErrId, 'La fecha límite no puede ser anterior a hoy.');
-    ok = false;
-  }
-
-  if (!ok) return null;
-  return { nombre, email, prioridad, fechaLimite: due || null };
-}
-
-// ════════════════════════════════════════════════════════════
-// 5. ERRORES VISUALES
-// ════════════════════════════════════════════════════════════
-
-function mostrarError(groupId, errorId, mensaje) {
-  const g = document.getElementById(groupId);
-  const s = document.getElementById(errorId);
-  if (g) g.classList.add('has-error');
-  if (s) s.textContent = mensaje;
-}
-
-function limpiarError(groupId, errorId) {
-  const g = document.getElementById(groupId);
-  const s = document.getElementById(errorId);
-  if (g) g.classList.remove('has-error');
-  if (s) s.textContent = '';
-}
-
-function limpiarTodosLosErrores() {
-  ['group-task-name',     'group-task-email',     'group-task-priority',     'group-task-due'].forEach((g, i) => {
-    limpiarError(g, ['error-task-name', 'error-task-email', 'error-task-priority', 'error-task-due'][i]);
-  });
-}
-
-// ════════════════════════════════════════════════════════════
-// 6. TOASTS
-// ════════════════════════════════════════════════════════════
-
-function mostrarToast(mensaje, tipo = 'success') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.classList.add('toast', `toast-${tipo}`);
-
-  const icono = document.createElement('i');
-  icono.classList.add(
-    tipo === 'success' ? 'ri-checkbox-circle-fill' :
-    tipo === 'danger'  ? 'ri-error-warning-fill'   : 'ri-information-fill'
-  );
-
-  const texto = document.createElement('span');
-  texto.textContent = mensaje;
-
-  toast.appendChild(icono);
-  toast.appendChild(texto);
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.animation = 'toastOut 0.3s var(--ease-out) forwards';
-    toast.addEventListener('animationend', () => toast.remove());
-  }, 3500);
-}
-
-// ════════════════════════════════════════════════════════════
-// 7. RENDERIZADO — XSS-SAFE
-// ════════════════════════════════════════════════════════════
-
-function obtenerTareasFiltradas() {
-  let tareas = obtenerTareas();
-
-  // — Filtro por estado —
-  if (filtroActivo === 'completada') tareas = tareas.filter(t =>  t.completada);
-  if (filtroActivo === 'pendiente')  tareas = tareas.filter(t => !t.completada);
-
-  // — Búsqueda por texto —
-  if (terminoBusqueda) {
-    const q = terminoBusqueda.toLowerCase();
-    tareas = tareas.filter(t =>
-      t.nombre.toLowerCase().includes(q) ||
-      t.email.toLowerCase().includes(q)
-    );
-  }
-
-  // — Ordenamiento —
-  tareas = [...tareas].sort((a, b) => {
-    if (ordenActivo === 'prioridad') {
-      return (PRIORIDAD_PESO[b.prioridad] || 0) - (PRIORIDAD_PESO[a.prioridad] || 0);
+    if (!n) {
+      errores.nombre = 'El nombre de la tarea es obligatorio.';
+    } else if (!NAME_REGEX.test(n)) {
+      errores.nombre = 'Usa entre 3–120 caracteres válidos. Sin símbolos especiales.';
     }
-    if (ordenActivo === 'fecha') {
-      // Tareas sin fecha van al final
-      const fa = a.fechaLimite || '9999-12-31';
-      const fb = b.fechaLimite || '9999-12-31';
-      return fa.localeCompare(fb);
+
+    if (!e) {
+      errores.email = 'El email del asignado es obligatorio.';
+    } else if (!EMAIL_REGEX.test(e)) {
+      errores.email = 'Ingresa un email válido (ej: nombre@empresa.com).';
     }
-    // 'creacion': más reciente primero (orden natural del array — unshift)
-    return new Date(b.creadoEn) - new Date(a.creadoEn);
-  });
 
-  return tareas;
-}
-
-function renderizarLista() {
-  const contenedor = document.getElementById('task-list');
-  const emptyState = document.getElementById('empty-state');
-  const tareas     = obtenerTareasFiltradas();
-
-  contenedor.replaceChildren();
-
-  if (tareas.length === 0) {
-    emptyState.classList.remove('hidden');
-  } else {
-    emptyState.classList.add('hidden');
-    tareas.forEach((tarea, i) => contenedor.appendChild(crearElementoTarea(tarea, i)));
-  }
-}
-
-function crearElementoTarea(tarea, index) {
-  const li = document.createElement('li');
-  li.classList.add('task-item');
-  if (tarea.completada) li.classList.add('completed');
-  li.setAttribute('data-id', tarea.id);
-  li.style.animationDelay = `${index * 0.04}s`;
-
-  // — Checkbox —
-  const check = document.createElement('button');
-  check.classList.add('task-check');
-  check.setAttribute('data-action', 'toggle');
-  check.setAttribute('aria-label', tarea.completada ? 'Marcar como pendiente' : 'Marcar como completada');
-  check.setAttribute('title', tarea.completada ? 'Desmarcar' : 'Completar');
-  if (tarea.completada) {
-    const checkIcon = document.createElement('i');
-    checkIcon.classList.add('ri-check-line');
-    check.appendChild(checkIcon);
-  }
-
-  // — Cuerpo —
-  const body = document.createElement('div');
-  body.classList.add('task-body');
-
-  const titulo = document.createElement('p');
-  titulo.classList.add('task-title');
-  titulo.textContent = tarea.nombre;
-
-  const meta = document.createElement('div');
-  meta.classList.add('task-meta');
-
-  // Email
-  const emailSpan = document.createElement('span');
-  emailSpan.classList.add('task-email');
-  const emailIcon = document.createElement('i');
-  emailIcon.classList.add('ri-mail-line');
-  const emailText = document.createElement('span');
-  emailText.textContent = tarea.email;
-  emailSpan.appendChild(emailIcon);
-  emailSpan.appendChild(emailText);
-
-  // Badge de prioridad
-  const badge = document.createElement('span');
-  badge.classList.add('priority-badge', tarea.prioridad);
-  badge.textContent = tarea.prioridad;
-
-  meta.appendChild(emailSpan);
-  meta.appendChild(badge);
-
-  // Fecha límite (si existe)
-  if (tarea.fechaLimite) {
-    const fechaSpan = document.createElement('span');
-    fechaSpan.classList.add('task-due');
-    const hoy = hoyISO();
-    if (tarea.fechaLimite < hoy && !tarea.completada) {
-      fechaSpan.classList.add('overdue');
+    if (!p) {
+      errores.prioridad = 'Selecciona una prioridad.';
     }
-    const calIcon = document.createElement('i');
-    calIcon.classList.add('ri-calendar-event-line');
-    const fechaText = document.createElement('span');
-    fechaText.textContent = formatearFecha(tarea.fechaLimite);
-    fechaSpan.appendChild(calIcon);
-    fechaSpan.appendChild(fechaText);
-    meta.appendChild(fechaSpan);
+
+    if (f && f < hoyISO()) {
+      errores.fechaLimite = 'La fecha límite no puede ser anterior a hoy.';
+    }
+
+    if (Object.keys(errores).length > 0) {
+      return { ok: false, errores };
+    }
+
+    return { ok: true, datos: { nombre: n, email: e, prioridad: p, fechaLimite: f || null } };
   }
 
-  body.appendChild(titulo);
-  body.appendChild(meta);
+  return { validar, hoyISO };
+})();
 
-  // — Acciones —
-  const actions = document.createElement('div');
-  actions.classList.add('task-actions');
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO 4 — UI
+// Responsabilidades: DOM, toasts, renderizado, modales, estadísticas.
+// Consume Store, Query y Validator. No contiene lógica de negocio.
+// ════════════════════════════════════════════════════════════════════════════
 
-  // Botón editar
-  const btnEdit = document.createElement('button');
-  btnEdit.classList.add('btn', 'btn-icon', 'btn-edit');
-  btnEdit.setAttribute('data-action', 'edit');
-  btnEdit.setAttribute('aria-label', 'Editar tarea');
-  btnEdit.setAttribute('title', 'Editar');
-  const editIcon = document.createElement('i');
-  editIcon.classList.add('ri-edit-line');
-  btnEdit.appendChild(editIcon);
+const UI = (() => {
 
-  // Botón eliminar
-  const btnDelete = document.createElement('button');
-  btnDelete.classList.add('btn', 'btn-icon');
-  btnDelete.setAttribute('data-action', 'delete');
-  btnDelete.setAttribute('aria-label', 'Eliminar tarea');
-  btnDelete.setAttribute('title', 'Eliminar');
-  const deleteIcon = document.createElement('i');
-  deleteIcon.classList.add('ri-delete-bin-6-line');
-  btnDelete.appendChild(deleteIcon);
+  // ── Utilidades de fecha ──────────────────────────────────────────────────
 
-  actions.appendChild(btnEdit);
-  actions.appendChild(btnDelete);
+  function formatearFecha(isoDate) {
+    if (!isoDate) return '';
+    const [y, m, d] = isoDate.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-CL', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
+  }
 
-  li.appendChild(check);
-  li.appendChild(body);
-  li.appendChild(actions);
+  // ── Toasts ───────────────────────────────────────────────────────────────
 
-  return li;
-}
-
-// ════════════════════════════════════════════════════════════
-// 8. ESTADÍSTICAS
-// ════════════════════════════════════════════════════════════
-
-function actualizarStats() {
-  const tareas     = obtenerTareas();
-  const total      = tareas.length;
-  const completadas = tareas.filter(t => t.completada).length;
-  const pendientes = total - completadas;
-
-  const container = document.getElementById('stats-bar');
-  container.replaceChildren();
-
-  [
-    { label: 'Total',     value: total      },
-    { label: 'Pendientes', value: pendientes },
-    { label: 'Listas',    value: completadas }
-  ].forEach(item => {
+  function toast(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
     const div = document.createElement('div');
-    div.classList.add('stat-item');
-    const num = document.createElement('span');
-    num.classList.add('stat-number');
-    num.textContent = item.value;
-    const lbl = document.createElement('span');
-    lbl.classList.add('stat-label');
-    lbl.textContent = item.label;
-    div.appendChild(num);
-    div.appendChild(lbl);
+    div.classList.add('toast', `toast-${tipo}`);
+
+    const icono = document.createElement('i');
+    icono.classList.add(
+      tipo === 'success' ? 'ri-checkbox-circle-fill' :
+      tipo === 'danger'  ? 'ri-error-warning-fill'   : 'ri-information-fill'
+    );
+
+    const texto = document.createElement('span');
+    texto.textContent = mensaje;
+
+    div.appendChild(icono);
+    div.appendChild(texto);
     container.appendChild(div);
-  });
-}
 
-// ════════════════════════════════════════════════════════════
-// 9. MODAL DE EDICIÓN
-// ════════════════════════════════════════════════════════════
+    setTimeout(() => {
+      div.style.animation = 'toastOut 0.3s var(--ease-out) forwards';
+      div.addEventListener('animationend', () => div.remove());
+    }, 3500);
+  }
 
-function abrirModalEdicion(id) {
-  const tarea = obtenerTareas().find(t => t.id === id);
-  if (!tarea) return;
+  // ── Errores de formulario ────────────────────────────────────────────────
 
-  document.getElementById('edit-task-id').value       = tarea.id;
-  document.getElementById('edit-task-name').value     = tarea.nombre;
-  document.getElementById('edit-task-email').value    = tarea.email;
-  document.getElementById('edit-task-priority').value = tarea.prioridad;
-  document.getElementById('edit-task-due').value      = tarea.fechaLimite || '';
+  /**
+   * Muestra los errores de Validator en el DOM.
+   * @param {Record<string,string>} errores
+   * @param {'create'|'edit'} modo
+   */
+  function mostrarErrores(errores, modo) {
+    const gp = modo === 'edit' ? 'group-edit-' : 'group-task-';
+    const ep = modo === 'edit' ? 'error-edit-' : 'error-task-';
 
-  // Poner el mínimo de fecha límite en hoy
-  document.getElementById('edit-task-due').min = hoyISO();
+    // Mapeo campo semántico → sufijo de ID en el DOM
+    const camposSufijo = {
+      nombre:      'name',
+      email:       'email',
+      prioridad:   'priority',
+      fechaLimite: 'due'
+    };
 
-  // Limpiar errores previos
-  ['group-edit-name','group-edit-email','group-edit-priority','group-edit-due'].forEach((g, i) => {
-    limpiarError(g, ['error-edit-name','error-edit-email','error-edit-priority','error-edit-due'][i]);
-  });
+    Object.entries(camposSufijo).forEach(([campo, sufijo]) => {
+      const g = document.getElementById(gp + sufijo);
+      const s = document.getElementById(ep + sufijo);
+      if (errores[campo]) {
+        if (g) g.classList.add('has-error');
+        if (s) s.textContent = errores[campo];
+      } else {
+        if (g) g.classList.remove('has-error');
+        if (s) s.textContent = '';
+      }
+    });
+  }
 
-  const modal = document.getElementById('modal-edit');
-  modal.classList.remove('hidden');
-  // Focus en el primer campo
-  document.getElementById('edit-task-name').focus();
-}
+  function limpiarErrores(modo) {
+    mostrarErrores({}, modo);
+  }
 
-function cerrarModalEdicion() {
-  document.getElementById('modal-edit').classList.add('hidden');
-}
+  // ── Renderizado de lista ─────────────────────────────────────────────────
 
-// ════════════════════════════════════════════════════════════
-// 10. FOCUS TRAP GENÉRICO
-// ════════════════════════════════════════════════════════════
+  function renderizarLista() {
+    const contenedor = document.getElementById('task-list');
+    const emptyState = document.getElementById('empty-state');
+    const tareas     = Query.aplicar(Store.obtener());
 
-/**
- * Devuelve todos los elementos focusables dentro de un contenedor.
- */
-function getFocusables(container) {
-  return Array.from(container.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  )).filter(el => !el.disabled && !el.closest('[hidden]'));
-}
+    contenedor.replaceChildren();
 
-/**
- * Aplica focus trap a un overlay modal:
- * - Tab / Shift+Tab ciclan dentro del modal
- * - Escape cierra el modal
- * @param {HTMLElement} overlay  — el div.modal-overlay
- * @param {Function}    cerrarFn — función que cierra el modal
- * @returns {Function} — listener a remover cuando se cierre
- */
-function crearFocusTrap(overlay, cerrarFn) {
-  function handler(e) {
-    if (e.key === 'Escape') {
-      cerrarFn();
+    if (tareas.length === 0) {
+      emptyState.classList.remove('hidden');
+    } else {
+      emptyState.classList.add('hidden');
+      tareas.forEach((tarea, i) => contenedor.appendChild(_crearElementoTarea(tarea, i)));
+    }
+  }
+
+  function _crearElementoTarea(tarea, index) {
+    const hoy = Validator.hoyISO();
+
+    const li = document.createElement('li');
+    li.classList.add('task-item');
+    if (tarea.completada) li.classList.add('completed');
+    li.setAttribute('data-id', tarea.id);
+    li.style.animationDelay = `${index * 0.04}s`;
+
+    // Checkbox
+    const check = document.createElement('button');
+    check.classList.add('task-check');
+    check.setAttribute('data-action', 'toggle');
+    check.setAttribute('aria-label', tarea.completada ? 'Marcar como pendiente' : 'Marcar como completada');
+    check.setAttribute('title', tarea.completada ? 'Desmarcar' : 'Completar');
+    if (tarea.completada) {
+      const icon = document.createElement('i');
+      icon.classList.add('ri-check-line');
+      check.appendChild(icon);
+    }
+
+    // Cuerpo
+    const body   = document.createElement('div');
+    body.classList.add('task-body');
+
+    const titulo = document.createElement('p');
+    titulo.classList.add('task-title');
+    titulo.textContent = tarea.nombre;
+
+    const meta = document.createElement('div');
+    meta.classList.add('task-meta');
+
+    // Email
+    const emailSpan = document.createElement('span');
+    emailSpan.classList.add('task-email');
+    const emailIcon = document.createElement('i');
+    emailIcon.classList.add('ri-mail-line');
+    const emailText = document.createElement('span');
+    emailText.textContent = tarea.email;
+    emailSpan.appendChild(emailIcon);
+    emailSpan.appendChild(emailText);
+
+    // Badge prioridad
+    const badge = document.createElement('span');
+    badge.classList.add('priority-badge', tarea.prioridad);
+    badge.textContent = tarea.prioridad;
+
+    meta.appendChild(emailSpan);
+    meta.appendChild(badge);
+
+    // Fecha límite
+    if (tarea.fechaLimite) {
+      const fechaSpan = document.createElement('span');
+      fechaSpan.classList.add('task-due');
+      if (tarea.fechaLimite < hoy && !tarea.completada) fechaSpan.classList.add('overdue');
+      const calIcon = document.createElement('i');
+      calIcon.classList.add('ri-calendar-event-line');
+      const fechaText = document.createElement('span');
+      fechaText.textContent = formatearFecha(tarea.fechaLimite);
+      fechaSpan.appendChild(calIcon);
+      fechaSpan.appendChild(fechaText);
+      meta.appendChild(fechaSpan);
+    }
+
+    body.appendChild(titulo);
+    body.appendChild(meta);
+
+    // Acciones
+    const actions = document.createElement('div');
+    actions.classList.add('task-actions');
+
+    const btnEdit = document.createElement('button');
+    btnEdit.classList.add('btn', 'btn-icon', 'btn-edit');
+    btnEdit.setAttribute('data-action', 'edit');
+    btnEdit.setAttribute('aria-label', 'Editar tarea');
+    btnEdit.setAttribute('title', 'Editar');
+    const editIcon = document.createElement('i');
+    editIcon.classList.add('ri-edit-line');
+    btnEdit.appendChild(editIcon);
+
+    const btnDelete = document.createElement('button');
+    btnDelete.classList.add('btn', 'btn-icon');
+    btnDelete.setAttribute('data-action', 'delete');
+    btnDelete.setAttribute('aria-label', 'Eliminar tarea');
+    btnDelete.setAttribute('title', 'Eliminar');
+    const deleteIcon = document.createElement('i');
+    deleteIcon.classList.add('ri-delete-bin-6-line');
+    btnDelete.appendChild(deleteIcon);
+
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnDelete);
+
+    li.appendChild(check);
+    li.appendChild(body);
+    li.appendChild(actions);
+
+    return li;
+  }
+
+  // ── Estadísticas ─────────────────────────────────────────────────────────
+
+  function actualizarStats() {
+    const tareas      = Store.obtener();
+    const total       = tareas.length;
+    const completadas = tareas.filter(t => t.completada).length;
+    const pendientes  = total - completadas;
+
+    const container = document.getElementById('stats-bar');
+    container.replaceChildren();
+
+    [
+      { label: 'Total',      value: total      },
+      { label: 'Pendientes', value: pendientes  },
+      { label: 'Listas',     value: completadas }
+    ].forEach(item => {
+      const div = document.createElement('div');
+      div.classList.add('stat-item');
+      const num = document.createElement('span');
+      num.classList.add('stat-number');
+      num.textContent = item.value;
+      const lbl = document.createElement('span');
+      lbl.classList.add('stat-label');
+      lbl.textContent = item.label;
+      div.appendChild(num);
+      div.appendChild(lbl);
+      container.appendChild(div);
+    });
+  }
+
+  // ── Modal de edición ─────────────────────────────────────────────────────
+
+  function abrirModalEdicion(id) {
+    const tarea = Store.obtener().find(t => t.id === id);
+    if (!tarea) return;
+
+    document.getElementById('edit-task-id').value       = tarea.id;
+    document.getElementById('edit-task-name').value     = tarea.nombre;
+    document.getElementById('edit-task-email').value    = tarea.email;
+    document.getElementById('edit-task-priority').value = tarea.prioridad;
+    document.getElementById('edit-task-due').value      = tarea.fechaLimite || '';
+    document.getElementById('edit-task-due').min        = Validator.hoyISO();
+
+    limpiarErrores('edit');
+
+    const modal = document.getElementById('modal-edit');
+    modal.classList.remove('hidden');
+    document.getElementById('edit-task-name').focus();
+  }
+
+  function cerrarModalEdicion() {
+    document.getElementById('modal-edit').classList.add('hidden');
+  }
+
+  // ── Focus Trap ───────────────────────────────────────────────────────────
+
+  function crearFocusTrap(overlay, cerrarFn) {
+    function handler(e) {
+      if (e.key === 'Escape') { cerrarFn(); return; }
+      if (e.key !== 'Tab') return;
+
+      const focusables = Array.from(
+        overlay.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')
+      ).filter(el => !el.disabled && !el.closest('[hidden]'));
+
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last  = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+      }
+    }
+    overlay.addEventListener('keydown', handler);
+    return handler;
+  }
+
+  // ── Exportar a JSON ──────────────────────────────────────────────────────
+
+  /**
+   * Descarga todas las tareas como archivo .json usando la Web API nativa.
+   * Patrón: Blob → URL.createObjectURL → <a>.click() → revokeObjectURL
+   */
+  function exportarJSON() {
+    const tareas = Store.obtener();
+    if (tareas.length === 0) {
+      toast('No hay tareas para exportar.', 'info');
       return;
     }
-    if (e.key !== 'Tab') return;
-
-    const focusables = getFocusables(overlay.querySelector('.modal, .modal-edit-body') || overlay);
-    if (focusables.length === 0) return;
-
-    const first = focusables[0];
-    const last  = focusables[focusables.length - 1];
-
-    if (e.shiftKey) {
-      if (document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
+    const json     = JSON.stringify(tareas, null, 2);
+    const blob     = new Blob([json], { type: 'application/json' });
+    const url      = URL.createObjectURL(blob);
+    const nombre   = `taskflow-tareas-${new Date().toISOString().split('T')[0]}.json`;
+    const enlace   = document.createElement('a');
+    enlace.href     = url;
+    enlace.download = nombre;
+    enlace.click();
+    URL.revokeObjectURL(url);
+    toast(`Exportadas ${tareas.length} tarea(s) a JSON ✓`, 'success');
   }
-  overlay.addEventListener('keydown', handler);
-  return handler; // Para limpiar si fuera necesario
-}
 
-// ════════════════════════════════════════════════════════════
-// 11. EVENT LISTENERS — DOMContentLoaded
-// ════════════════════════════════════════════════════════════
+  // ── Refresco completo ─────────────────────────────────────────────────────
+
+  function refrescar() {
+    renderizarLista();
+    actualizarStats();
+  }
+
+  return {
+    toast,
+    mostrarErrores,
+    limpiarErrores,
+    renderizarLista,
+    actualizarStats,
+    abrirModalEdicion,
+    cerrarModalEdicion,
+    crearFocusTrap,
+    refrescar,
+    exportarJSON
+  };
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+// INICIALIZACIÓN — DOMContentLoaded
+// Solo registra event listeners y hace el render inicial.
+// Sin lógica de negocio aquí.
+// ════════════════════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // — Poner mínimo de fecha en hoy —
-  document.getElementById('task-due').min = hoyISO();
+  // Mínimo de fecha = hoy
+  document.getElementById('task-due').min = Validator.hoyISO();
 
-  // — Render inicial —
-  renderizarLista();
-  actualizarStats();
+  // Render inicial
+  UI.refrescar();
 
-  // ——— Formulario: submit (CREAR) ———
+  // ── Crear tarea ───────────────────────────────────────────────────────────
   document.getElementById('task-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    limpiarTodosLosErrores();
+    UI.limpiarErrores('create');
 
-    const datos = validarCampos('create');
-    if (!datos) return;
+    const raw = {
+      nombre:      document.getElementById('task-name').value,
+      email:       document.getElementById('task-email').value,
+      prioridad:   document.getElementById('task-priority').value,
+      fechaLimite: document.getElementById('task-due').value
+    };
 
-    agregarItem(datos.nombre, datos.email, datos.prioridad, datos.fechaLimite);
+    const resultado = Validator.validar(raw);
+    if (!resultado.ok) {
+      UI.mostrarErrores(resultado.errores, 'create');
+      return;
+    }
+
+    Store.agregar(resultado.datos);
     e.target.reset();
-    document.getElementById('task-due').min = hoyISO();
-    renderizarLista();
-    actualizarStats();
-    mostrarToast('Tarea creada exitosamente', 'success');
+    document.getElementById('task-due').min = Validator.hoyISO();
+    UI.refrescar();
+    UI.toast('Tarea creada exitosamente', 'success');
   });
 
-  // ——— Formulario: submit (EDITAR) ———
+  // ── Editar tarea ──────────────────────────────────────────────────────────
   document.getElementById('edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const datos = validarCampos('edit');
-    if (!datos) return;
+    const raw = {
+      nombre:      document.getElementById('edit-task-name').value,
+      email:       document.getElementById('edit-task-email').value,
+      prioridad:   document.getElementById('edit-task-priority').value,
+      fechaLimite: document.getElementById('edit-task-due').value
+    };
+
+    const resultado = Validator.validar(raw);
+    if (!resultado.ok) {
+      UI.mostrarErrores(resultado.errores, 'edit');
+      return;
+    }
 
     const id = document.getElementById('edit-task-id').value;
-    editarItem(id, datos);
-    cerrarModalEdicion();
-    renderizarLista();
-    actualizarStats();
-    mostrarToast('Tarea actualizada', 'success');
+    Store.editar(id, resultado.datos);
+    UI.cerrarModalEdicion();
+    UI.refrescar();
+    UI.toast('Tarea actualizada', 'success');
   });
 
-  // ——— Delegación de eventos en la lista ———
+  // ── Acciones en la lista (delegación) ────────────────────────────────────
   document.getElementById('task-list').addEventListener('click', (e) => {
     const actionBtn = e.target.closest('[data-action]');
     if (!actionBtn) return;
-
     const taskItem = actionBtn.closest('.task-item');
     if (!taskItem) return;
 
@@ -563,104 +595,122 @@ document.addEventListener('DOMContentLoaded', () => {
     const action = actionBtn.getAttribute('data-action');
 
     if (action === 'toggle') {
-      const tarea = toggleCompletada(taskId);
-      renderizarLista();
-      actualizarStats();
-      if (tarea) {
-        mostrarToast(tarea.completada ? 'Tarea completada' : 'Tarea marcada como pendiente', 'success');
-      }
+      const tarea = Store.toggle(taskId);
+      UI.refrescar();
+      if (tarea) UI.toast(tarea.completada ? 'Tarea completada ✓' : 'Tarea marcada como pendiente', 'success');
     }
 
     if (action === 'edit') {
-      abrirModalEdicion(taskId);
+      UI.abrirModalEdicion(taskId);
     }
 
     if (action === 'delete') {
       taskItem.classList.add('removing');
       taskItem.addEventListener('animationend', () => {
-        eliminarItem(taskId);
-        renderizarLista();
-        actualizarStats();
-        mostrarToast('Tarea eliminada', 'danger');
-      });
+        Store.eliminar(taskId);
+        UI.refrescar();
+        UI.toast('Tarea eliminada', 'danger');
+      }, { once: true });
     }
   });
 
-  // ——— Filtros ———
+  // ── Filtros ───────────────────────────────────────────────────────────────
   document.querySelector('.filters-section').addEventListener('click', (e) => {
     const chip = e.target.closest('.filter-chip');
     if (!chip) return;
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    filtroActivo = chip.getAttribute('data-filter');
-    renderizarLista();
+    Query.setFiltro(chip.getAttribute('data-filter'));
+    UI.renderizarLista();
   });
 
-  // ——— Búsqueda en tiempo real ———
+  // ── Búsqueda ──────────────────────────────────────────────────────────────
   document.getElementById('search-input').addEventListener('input', (e) => {
-    terminoBusqueda = e.target.value.trim();
-    renderizarLista();
+    Query.setBusqueda(e.target.value);
+    UI.renderizarLista();
   });
 
-  // ——— Ordenamiento ———
+  // ── Ordenamiento ──────────────────────────────────────────────────────────
   document.querySelector('.sort-controls').addEventListener('click', (e) => {
     const btn = e.target.closest('.sort-btn');
     if (!btn) return;
     document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    ordenActivo = btn.getAttribute('data-sort');
-    renderizarLista();
+    Query.setOrden(btn.getAttribute('data-sort'));
+    UI.renderizarLista();
   });
 
-  // ——— Limpiar errores en tiempo real ———
-  document.getElementById('task-name').addEventListener('input',     () => limpiarError('group-task-name',     'error-task-name'));
-  document.getElementById('task-email').addEventListener('input',    () => limpiarError('group-task-email',    'error-task-email'));
-  document.getElementById('task-priority').addEventListener('change',() => limpiarError('group-task-priority', 'error-task-priority'));
-  document.getElementById('task-due').addEventListener('change',     () => limpiarError('group-task-due',      'error-task-due'));
+  // ── Limpiar errores en tiempo real (crear) ────────────────────────────────
+  [
+    ['task-name',     'group-task-name',     'error-task-name',     'input'],
+    ['task-email',    'group-task-email',    'error-task-email',    'input'],
+    ['task-priority', 'group-task-priority', 'error-task-priority', 'change'],
+    ['task-due',      'group-task-due',      'error-task-due',      'change']
+  ].forEach(([inputId, groupId, errorId, evt]) => {
+    document.getElementById(inputId).addEventListener(evt, () => {
+      const g = document.getElementById(groupId);
+      const s = document.getElementById(errorId);
+      if (g) g.classList.remove('has-error');
+      if (s) s.textContent = '';
+    });
+  });
 
-  // ——— Modal Hard Reset ———
+  // ── Limpiar errores en tiempo real (editar) ───────────────────────────────
+  [
+    ['edit-task-name',     'group-edit-name',     'error-edit-name',     'input'],
+    ['edit-task-email',    'group-edit-email',    'error-edit-email',    'input'],
+    ['edit-task-priority', 'group-edit-priority', 'error-edit-priority', 'change'],
+    ['edit-task-due',      'group-edit-due',      'error-edit-due',      'change']
+  ].forEach(([inputId, groupId, errorId, evt]) => {
+    document.getElementById(inputId).addEventListener(evt, () => {
+      const g = document.getElementById(groupId);
+      const s = document.getElementById(errorId);
+      if (g) g.classList.remove('has-error');
+      if (s) s.textContent = '';
+    });
+  });
+
+  // ── Exportar JSON ─────────────────────────────────────────────────────────
+  document.getElementById('btn-export-json').addEventListener('click', () => {
+    UI.exportarJSON();
+  });
+
+  // ── Modal Hard Reset ──────────────────────────────────────────────────────
   const modalReset = document.getElementById('modal-reset');
 
   document.getElementById('btn-hard-reset').addEventListener('click', () => {
     modalReset.classList.remove('hidden');
-    // Focus en Cancelar (acción segura)
     document.getElementById('modal-cancel').focus();
   });
 
   document.getElementById('modal-cancel').addEventListener('click', () => modalReset.classList.add('hidden'));
+
   document.getElementById('modal-confirm').addEventListener('click', () => {
     modalReset.classList.add('hidden');
-    hardReset();
+    Store.resetear();
+    UI.refrescar();
+    UI.toast('Todas las tareas fueron eliminadas', 'danger');
   });
 
-  // Cerrar al click fuera del modal
   modalReset.addEventListener('click', (e) => {
     if (e.target === modalReset) modalReset.classList.add('hidden');
   });
 
-  // Focus trap + Escape en modal de reset
-  crearFocusTrap(modalReset, () => modalReset.classList.add('hidden'));
+  UI.crearFocusTrap(modalReset, () => modalReset.classList.add('hidden'));
 
-  // ——— Modal Edición ———
+  // ── Modal Edición ─────────────────────────────────────────────────────────
   const modalEdit = document.getElementById('modal-edit');
 
-  document.getElementById('modal-edit-close').addEventListener('click', cerrarModalEdicion);
-  document.getElementById('edit-cancel').addEventListener('click', cerrarModalEdicion);
+  document.getElementById('modal-edit-close').addEventListener('click', UI.cerrarModalEdicion);
+  document.getElementById('edit-cancel').addEventListener('click', UI.cerrarModalEdicion);
 
   modalEdit.addEventListener('click', (e) => {
-    if (e.target === modalEdit) cerrarModalEdicion();
+    if (e.target === modalEdit) UI.cerrarModalEdicion();
   });
 
-  // Focus trap + Escape en modal de edición
-  crearFocusTrap(modalEdit, cerrarModalEdicion);
+  UI.crearFocusTrap(modalEdit, UI.cerrarModalEdicion);
 
-  // Limpiar errores del form de edición en tiempo real
-  document.getElementById('edit-task-name').addEventListener('input',     () => limpiarError('group-edit-name',     'error-edit-name'));
-  document.getElementById('edit-task-email').addEventListener('input',    () => limpiarError('group-edit-email',    'error-edit-email'));
-  document.getElementById('edit-task-priority').addEventListener('change',() => limpiarError('group-edit-priority', 'error-edit-priority'));
-  document.getElementById('edit-task-due').addEventListener('change',     () => limpiarError('group-edit-due',      'error-edit-due'));
-
-  // ——— Dark Mode ———
+  // ── Dark Mode ─────────────────────────────────────────────────────────────
   const htmlEl    = document.documentElement;
   const themeIcon = document.getElementById('theme-icon');
 

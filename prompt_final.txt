@@ -1,0 +1,38 @@
+Actúa como un Desarrollador Full-Stack Senior experto en diseño UI/UX, arquitectura frontend y ciberseguridad.
+
+Tu objetivo es desarrollar una aplicación web funcional de tipo "Task Manager" (Gestor de Tareas) utilizando estrictamente HTML5, CSS 5 y Vanilla JavaScript. Esta aplicación debe cumplir con estándares académicos de alto nivel y buenas prácticas de la industria.
+
+A continuación, se detallan los requisitos estrictos que el código debe cumplir:
+
+1. ARQUITECTURA Y ESTADO (LÓGICA DE NEGOCIO):
+- Uso intensivo de arreglos de objetos para almacenar y organizar las tareas. Cada tarea debe tener un ID único (ej. `crypto.randomUUID()`), título, descripción/asignado (email), prioridad y estado (completado/pendiente).
+- Persistencia de datos utilizando `localStorage`. El estado debe cargarse al iniciar la app y guardarse en cada mutación (Crear, Actualizar, Eliminar).
+- Implementar una funcionalidad de "Reinicio Fuerte" (Hard Reset) que permita al usuario borrar todo el localStorage y reiniciar el arreglo a su estado inicial de forma segura.
+- Implementar funciones modulares y reutilizables (ej. `obtenerTareas()`, `guardarTareas()`, `renderizarLista()`, `agregarItem()`, `eliminarItem()`).
+
+2. MANIPULACIÓN DEL DOM Y EVENTOS:
+- Formulario HTML con al menos 3 campos obligatorios: un input de texto (Nombre de tarea), un input de email o número (Asignado a / Días estimados), y un `<select>` (Prioridad).
+- El DOM debe actualizarse dinámicamente al agregar, marcar como completada o eliminar una tarea, sin recargar la página.
+- Aplicar el patrón de "Delegación de Eventos" para los botones de acción dentro de la lista de tareas.
+
+3. SEGURIDAD Y MANEJO DE ERRORES (CRÍTICO):
+- PROHIBIDO usar `innerHTML` o `insertAdjacentHTML` con datos dinámicos. Debes usar obligatoriamente `document.createElement()`, `textContent` y `setAttribute` para prevenir ataques XSS.
+- Validaciones avanzadas en JavaScript antes de procesar el formulario: 
+  - Uso de expresiones regulares (Regex) para validar el formato del email o la longitud del texto.
+  - Sanitización de inputs (eliminar espacios en blanco extra, escapar caracteres especiales si fuera necesario).
+- Manejo de errores UX: Mostrar mensajes de error visuales, no intrusivos (ej. pequeños toasts o texto rojo bajo el input) si la validación falla, evitando los `alert()` nativos.
+
+4. UX/UI Y RESPONSIVIDAD:
+- Diseño "Mobile-First" 100% responsive, con una transición fluida a resoluciones de tablet y escritorio.
+- El diseño debe sentirse premium, limpio y natural, propio de un producto SaaS moderno.
+- Iconografía: Integra una librería ligera (como Phosphor Icons o FontAwesome CDN) para los botones de borrar, editar o completar.
+- Tipografía y Tono: Usa una fuente moderna de Google Fonts (ej. Inter, Roboto o Poppins). Paleta de colores profesional (modo claro/oscuro o tonos neutros con acentos de color para las prioridades).
+
+5. DOCUMENTACIÓN Y ENTREGABLES:
+Genera un archivo `README.md` profesional para mi repositorio (https://github.com/vicentemrk). El README debe contener:
+- Descripción del proyecto (Task Manager).
+- Tecnologías utilizadas.
+- Instrucciones de despliegue (pensado para GitHub Pages).
+- Una sección obligatoria llamada "Uso de IA", donde se detalle cómo se utilizó esta herramienta para refactorizar código, generar validaciones complejas de Regex y estructurar el proyecto (incluir ejemplos breves de prompt -> mejora aplicada, simulando que te utilicé para validar el código).
+
+Por favor, entrégame el código separado en tres bloques claros (index.html, styles.css, app.js) y finalmente el contenido del README.md. El código JS debe estar profusamente comentado explicando el porqué de cada decisión de seguridad.
