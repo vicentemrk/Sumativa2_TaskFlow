@@ -128,6 +128,20 @@
             </select>
             <span class="error-message" id="error-task-priority"></span>
           </div>
+
+          <!-- Campo: Fecha límite (due date) -->
+          <div class="form-group" id="group-task-due">
+            <label for="task-due">
+              <i class="ri-calendar-line"></i> Fecha límite
+            </label>
+            <input
+              type="date"
+              id="task-due"
+              name="taskDue"
+            >
+            <span class="error-message" id="error-task-due"></span>
+          </div>
+
         </div>
 
         <button type="submit" class="btn btn-primary btn-submit" id="btn-submit-task">
@@ -135,6 +149,34 @@
           <span>Agregar tarea</span>
         </button>
       </form>
+    </section>
+
+    <!-- ——————————————————————————————————————————————— -->
+    <!-- BARRA DE BÚSQUEDA Y ORDENAMIENTO               -->
+    <!-- ——————————————————————————————————————————————— -->
+    <section class="toolbar-section" aria-label="Búsqueda y ordenamiento">
+      <div class="search-box">
+        <i class="ri-search-line search-icon" aria-hidden="true"></i>
+        <input
+          type="search"
+          id="search-input"
+          placeholder="Buscar por nombre o email…"
+          autocomplete="off"
+          aria-label="Buscar tareas"
+        >
+      </div>
+      <div class="sort-controls" role="group" aria-label="Ordenar tareas">
+        <span class="sort-label"><i class="ri-sort-asc"></i> Ordenar:</span>
+        <button class="sort-btn active" data-sort="creacion" title="Más reciente primero">
+          <i class="ri-time-line"></i> Creación
+        </button>
+        <button class="sort-btn" data-sort="prioridad" title="Mayor prioridad primero">
+          <i class="ri-flag-line"></i> Prioridad
+        </button>
+        <button class="sort-btn" data-sort="fecha" title="Fecha límite más próxima primero">
+          <i class="ri-calendar-line"></i> Fecha límite
+        </button>
+      </div>
     </section>
 
     <!-- ——————————————————————————————————————————————— -->
@@ -173,17 +215,85 @@
   <!-- ═══════════════════════════════════════════════════ -->
   <!-- MODAL DE CONFIRMACIÓN (Hard Reset)                 -->
   <!-- ═══════════════════════════════════════════════════ -->
-  <div class="modal-overlay hidden" id="modal-reset">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-overlay hidden" id="modal-reset" role="dialog" aria-modal="true" aria-labelledby="modal-reset-title">
+    <div class="modal">
       <div class="modal-icon">
         <i class="ri-error-warning-fill"></i>
       </div>
-      <h3 id="modal-title">¿Reiniciar todo?</h3>
+      <h3 id="modal-reset-title">¿Reiniciar todo?</h3>
       <p>Esta acción eliminará <strong>todas las tareas</strong> y el almacenamiento local de forma permanente. No se puede deshacer.</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
         <button class="btn btn-danger" id="modal-confirm">Sí, borrar todo</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- MODAL DE EDICIÓN (Edit Task)                       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="modal-edit" role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
+    <div class="modal modal-edit-body">
+      <div class="modal-edit-header">
+        <h3 id="modal-edit-title"><i class="ri-edit-line"></i> Editar tarea</h3>
+        <button class="btn btn-icon" id="modal-edit-close" aria-label="Cerrar editor">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+
+      <form id="edit-form" novalidate>
+        <input type="hidden" id="edit-task-id">
+
+        <div class="form-grid">
+          <!-- Nombre -->
+          <div class="form-group" id="group-edit-name">
+            <label for="edit-task-name">
+              <i class="ri-text"></i> Nombre de la tarea
+            </label>
+            <input type="text" id="edit-task-name" autocomplete="off" required>
+            <span class="error-message" id="error-edit-name"></span>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group" id="group-edit-email">
+            <label for="edit-task-email">
+              <i class="ri-mail-line"></i> Asignado a (email)
+            </label>
+            <input type="email" id="edit-task-email" autocomplete="off" required>
+            <span class="error-message" id="error-edit-email"></span>
+          </div>
+
+          <!-- Prioridad -->
+          <div class="form-group" id="group-edit-priority">
+            <label for="edit-task-priority">
+              <i class="ri-flag-line"></i> Prioridad
+            </label>
+            <select id="edit-task-priority" required>
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+            <span class="error-message" id="error-edit-priority"></span>
+          </div>
+
+          <!-- Fecha límite -->
+          <div class="form-group" id="group-edit-due">
+            <label for="edit-task-due">
+              <i class="ri-calendar-line"></i> Fecha límite
+            </label>
+            <input type="date" id="edit-task-due">
+            <span class="error-message" id="error-edit-due"></span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="edit-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="edit-save">
+            <i class="ri-save-line"></i> Guardar cambios
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

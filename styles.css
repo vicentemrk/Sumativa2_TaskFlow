@@ -947,3 +947,205 @@ ul {
   background: var(--color-accent-soft);
   color: var(--color-accent-hover);
 }
+
+/* ──────────────────────────────────────────
+   19. TOOLBAR — BÚSQUEDA + ORDENAMIENTO
+   ────────────────────────────────────────── */
+.toolbar-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Search box */
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+#search-input {
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: all var(--duration) var(--ease-out);
+}
+
+#search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+#search-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* Sort controls */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sort-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sort-btn {
+  font-family: var(--font-family);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease-out);
+  outline: none;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sort-btn.active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sort-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* ──────────────────────────────────────────
+   20. DUE DATE BADGE en tarjeta de tarea
+   ────────────────────────────────────────── */
+.task-due {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.task-due i {
+  font-size: 0.82rem;
+}
+
+/* Fecha vencida */
+.task-due.overdue {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+/* ──────────────────────────────────────────
+   21. BOTÓN EDITAR en tarjeta
+   ────────────────────────────────────────── */
+.btn-edit {
+  color: var(--color-text-muted);
+}
+
+.btn-edit:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+/* ──────────────────────────────────────────
+   22. MODAL DE EDICIÓN
+   ────────────────────────────────────────── */
+.modal-edit-body {
+  text-align: left;
+  max-width: 520px;
+  padding: 28px;
+}
+
+.modal-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-edit-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+}
+
+.modal-edit-header h3 i {
+  color: var(--color-accent);
+}
+
+/* Responsive: edit modal full-width on small screens */
+@media (max-width: 540px) {
+  .modal-edit-body {
+    padding: 20px 16px;
+  }
+}
+
+/* ──────────────────────────────────────────
+   23. FORM GRID — 4 campos: 2+2 columnas
+   ────────────────────────────────────────── */
+@media (min-width: 640px) {
+  /* El grid del form de creación ya tiene reglas en sección 13.
+     Este bloque añade que la fecha límite también ocupe su columna. */
+  #task-form .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Nombre ocupa todo el ancho */
+  #task-form .form-grid #group-task-name {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 900px) {
+  #task-form .form-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+
+  #task-form .form-grid #group-task-name {
+    grid-column: 1 / 3;
+  }
+}
