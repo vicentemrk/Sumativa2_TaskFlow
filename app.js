@@ -556,6 +556,13 @@ document.addEventListener('DOMContentLoaded', () => {
     Store.agregar(resultado.datos);
     e.target.reset();
     document.getElementById('task-due').min = Validator.hoyISO();
+    
+    // Si estamos en móvil, cerrar el bottom sheet tras crear
+    if (window.innerWidth <= 640) {
+      document.getElementById('form-section').classList.remove('show-mobile');
+      document.getElementById('form-overlay').classList.remove('active');
+    }
+
     UI.refrescar();
     UI.toast('Tarea creada exitosamente', 'success');
   });
@@ -730,4 +737,26 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-theme-toggle').addEventListener('click', () => {
     aplicarTema(htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
+
+  // ── Mobile Bottom Sheet (Phase 3) ─────────────────────────────────────────
+  const formSection = document.getElementById('form-section');
+  const formOverlay = document.getElementById('form-overlay');
+  const fabAdd      = document.getElementById('fab-add-task');
+  const btnClose    = document.getElementById('btn-close-form');
+
+  function toggleMobileForm(show) {
+    if (show) {
+      formSection.classList.add('show-mobile');
+      formOverlay.classList.add('active');
+      document.getElementById('task-name').focus();
+    } else {
+      formSection.classList.remove('show-mobile');
+      formOverlay.classList.remove('active');
+    }
+  }
+
+  fabAdd.addEventListener('click', () => toggleMobileForm(true));
+  btnClose.addEventListener('click', () => toggleMobileForm(false));
+  formOverlay.addEventListener('click', () => toggleMobileForm(false));
+
 });

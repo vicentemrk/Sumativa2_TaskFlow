@@ -18,7 +18,7 @@
   <!-- Google Fonts: Inter para una tipografía moderna y legible -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Remix Icons: librería moderna y completa de iconos -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet">
@@ -66,9 +66,13 @@
     <!-- ——————————————————————————————————————————————— -->
     <!-- FORMULARIO DE NUEVA TAREA                       -->
     <!-- ——————————————————————————————————————————————— -->
-    <section class="form-section" aria-label="Crear nueva tarea">
+    <div class="form-overlay-mobile" id="form-overlay"></div>
+    <section class="form-section" id="form-section" aria-label="Crear nueva tarea">
       <div class="section-header">
-        <h2><i class="ri-add-circle-line"></i> Nueva tarea</h2>
+        <h2><i class="ri-add-circle-line"></i> <span id="form-title">Nueva tarea</span></h2>
+        <button type="button" class="btn-close-form" id="btn-close-form" aria-label="Cerrar">
+          <i class="ri-close-line"></i>
+        </button>
       </div>
 
       <form id="task-form" novalidate>
@@ -293,6 +297,11 @@
   <!-- CONTENEDOR DE TOASTS                               -->
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Botón flotante para móvil (FAB) -->
+  <button class="btn-fab" id="fab-add-task" aria-label="Nueva tarea">
+    <i class="ri-add-line"></i>
+  </button>
 
   <!-- ═══════════════════════════════════════════════════ -->
   <!-- FOOTER                                             -->

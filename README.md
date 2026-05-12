@@ -12,32 +12,29 @@
 
 ## 🚀 Descripción
 
-**TaskFlow** gestor tareas tipo SaaS, proyecto académico. Crea, edita, completa, elimina y exporta tareas con email, fechas límite y prioridades. Sin dependencias externas.
+**TaskFlow** es un gestor de tareas tipo SaaS premium, desarrollado como proyecto académico. Implementa un diseño "Electric SaaS" con optimización móvil avanzada, micro-interacciones y una arquitectura modular robusta. Sin dependencias externas.
 
 ---
 
 ## ✨ Características
 
-### CRUD Completo
-- **Crear** — nombre, email, prioridad, fecha límite opcional.
-- **Leer** — filtros por estado (todas / pendientes / completadas).
-- **Editar** — modal dedicado, todos los campos.
-- **Eliminar** — individual con animación o borrado masivo con confirmación.
-- **Toggle** — completada/pendiente desde la lista.
+### Experiencia Premium (v4.0)
+- 🎨 **Electric SaaS UI** — Estética moderna basada en la paleta **Electric Violet** con tipografía **Outfit**.
+- 📱 **Experiencia Mobile-First** — FAB (Botón Flotante) y Bottom Sheet para una gestión táctil ergonómica.
+- ✨ **Design Spells** — Micro-interacciones premium: animaciones spring, efectos de brillo (shimmer) y feedback visual avanzado.
+- 🌓 **Dark Mode Pro** — Soporte nativo para temas claro y oscuro con persistencia y contrastes optimizados.
 
-### Búsqueda y Ordenamiento
-- 🔍 **Búsqueda en tiempo real** por nombre o email.
-- 🔃 **Orden** por creación, prioridad o fecha límite.
+### CRUD & Gestión
+- **Ciclo Completo** — Crear, leer, editar, toggle y eliminar tareas con confirmación.
+- 🔍 **Búsqueda Pro** — Filtrado en tiempo real por nombre o email (case-insensitive).
+- 🔃 **Orden Inteligente** — Ordenamiento por creación, prioridad (urgente > baja) o fecha límite.
+- 📥 **Exportación JSON** — Respaldo de datos instantáneo usando la API de Blobs.
 
-### Exportación
-- 📥 **Exportar JSON** — `Blob` + `URL.createObjectURL`, descarga con un clic.
-
-### Calidad y Seguridad
-- 🛡️ **XSS-safe**: `textContent` + DOM API, sin `innerHTML`.
-- ✅ **Validación**: Regex RFC 5322 + sanitización automática.
-- ♿ **Accesibilidad**: Focus trap modales (Tab / Shift+Tab / Escape), ARIA.
-- 📱 **Mobile-First**: 100% responsive.
-- 🌙 **Dark Mode**: persistido en localStorage, respeta `prefers-color-scheme`.
+### Seguridad & Calidad
+- 🛡️ **XSS-safe**: Uso estricto de `textContent` y DOM API.
+- ✅ **Validación Robusta**: Regex RFC 5322 + sanitización automática de espacios.
+- ♿ **Accesibilidad**: Focus trap en modales (Tab / Shift+Tab / Escape) y soporte ARIA.
+- 🧪 **TDD Ready**: Suite de tests integrada para validar lógica de negocio en aislamiento.
 
 ---
 
@@ -89,12 +86,11 @@ Ciclo TDD: **RED → GREEN → REFACTOR**. Testea solo interfaz pública.
 | Tecnología | Uso |
 |---|---|
 | **HTML5 semántico** | Estructura, roles ARIA |
-| **CSS3** | Custom Properties, Grid, Flexbox, animaciones |
-| **JavaScript ES6+** | IIFE, `crypto.randomUUID()`, `Blob`, `URL.createObjectURL` |
+| **CSS3 (Advanced)** | HSL Tokens, Spring Easing, Backdrop Blur, Shimmer |
+| **JavaScript ES6+** | Arquitectura IIFE, crypto UUID, Blobs |
 | **Web Storage API** | Persistencia sin backend |
-| **Web Crypto API** | IDs únicos seguros |
-| **Remix Icon** | Iconografía ligera |
-| **Google Fonts — Inter** | Tipografía legible |
+| **Remix Icon** | Iconografía ligera y profesional |
+| **Outfit & Inter** | Tipografía premium vía Google Fonts |
 
 ---
 
@@ -127,9 +123,10 @@ cd Sumativa-2-TaskFlow-
 
 | Iteración | Contribución |
 |-----------|-------------|
-| **v1** | Estructura, paleta, validaciones básicas |
-| **v2** | XSS-safe, toasts, dark mode |
-| **v3** | Arquitectura IIFE, separación DOM/lógica, focus trap, tests TDD |
+| **v1** | Estructura, paleta básica y validaciones |
+| **v2** | XSS-safe, toasts y modo oscuro |
+| **v3** | Arquitectura IIFE, tests TDD, focus trap |
+| **v4** | UI Premium "Electric SaaS", FAB, Bottom Sheet y Micro-interacciones |
 
 IA auditó arquitectura, seguridad y testing. Diseño conceptual: requerimiento académico.
 
