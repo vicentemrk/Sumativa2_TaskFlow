@@ -701,7 +701,7 @@ ul {
   font-size: 4rem;
   margin-bottom: 12px;
   display: block;
-  opacity: 0.4;
+  /* Shimmer animation applied via Design Spells (section 14) */
 }
 
 .empty-state p {
@@ -832,6 +832,33 @@ ul {
   background: var(--color-done);
 }
 
+.toast.toast-danger {
+  background: var(--color-danger);
+}
+
+.toast i {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
 /* ──────────────────────────────────────────
    12. MOBILE & FAB (Phase 3)
    ────────────────────────────────────────── */
@@ -923,6 +950,7 @@ ul {
   100% { background-position: 200% 0; }
 }
 
+/* Shimmer effect on empty-state icon (merged from duplicate rule) */
 .empty-state i {
   background: linear-gradient(90deg, 
     var(--color-text-muted) 25%, 
@@ -976,35 +1004,10 @@ ul {
   background: var(--color-text-muted);
 }
 
-.toast.toast-danger {
-  background: var(--color-danger);
-}
-
-.toast i {
-  font-size: 1.15rem;
-  flex-shrink: 0;
-}
-
-@keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toastOut {
-  to {
-    opacity: 0;
-    transform: translateY(16px) scale(0.96);
-  }
-}
+/* Toast variants and animations moved to section 11 */
 
 /* ──────────────────────────────────────────
-   12. FOOTER
+   15. FOOTER
    ────────────────────────────────────────── */
 .app-footer {
   text-align: center;
@@ -1014,12 +1017,10 @@ ul {
   border-top: 1px solid var(--color-border);
 }
 
-.app-footer i {
-  color: var(--color-danger);
-}
+/* (removed unused .app-footer i — no <i> in footer HTML) */
 
 /* ──────────────────────────────────────────
-   13. RESPONSIVE — TABLET (≥ 640px)
+   16. RESPONSIVE — TABLET (≥ 640px)
    ────────────────────────────────────────── */
 @media (min-width: 640px) {
   .form-grid {
@@ -1042,7 +1043,7 @@ ul {
 }
 
 /* ──────────────────────────────────────────
-   14. RESPONSIVE — DESKTOP (≥ 900px)
+   17. RESPONSIVE — DESKTOP (≥ 900px)
    ────────────────────────────────────────── */
 @media (min-width: 900px) {
   .form-grid {
@@ -1059,7 +1060,7 @@ ul {
 }
 
 /* ──────────────────────────────────────────
-   15. RESPONSIVE — MOBILE SMALL (≤ 380px)
+   18. RESPONSIVE — MOBILE SMALL (≤ 380px)
    ────────────────────────────────────────── */
 @media (max-width: 380px) {
   .header-inner {
@@ -1154,7 +1155,7 @@ ul {
 }
 
 #search-input {
-  font-family: var(--font-family);
+  font-family: var(--font-body);
   font-size: 0.9rem;
   width: 100%;
   padding: 10px 14px 10px 38px;
@@ -1194,7 +1195,7 @@ ul {
 }
 
 .sort-btn {
-  font-family: var(--font-family);
+  font-family: var(--font-body);
   display: inline-flex;
   align-items: center;
   gap: 5px;
